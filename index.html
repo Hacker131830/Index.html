@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="theme-color" content="#0b1220">
+<title>Workshop Manager</title>
+<style>
+:root{--bg:#f3f5fa;--card:#fff;--tx:#0f172a;--mut:#64748b;--br:#e2e8f0;--ac:#3b82f6;--ok:#16a34a;--wr:#d97706;--er:#dc2626;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0b1220;--card:#131c2e;--tx:#e6ebf5;--mut:#8b97ad;--br:#24314a;--ac:#4c8dff;--ok:#34d399;--wr:#fbbf24;--er:#f87171}}
+:root[data-theme="dark"]{--bg:#0b1220;--card:#131c2e;--tx:#e6ebf5;--mut:#8b97ad;--br:#24314a;--ac:#4c8dff;--ok:#34d399;--wr:#fbbf24;--er:#f87171}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding-bottom:84px}
+main{max-width:640px;margin:0 auto;padding:14px}
+h2{margin:6px 0 12px;font-size:20px}h3{margin:16px 0 8px;font-size:15px;color:var(--mut)}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.top b{font-size:17px}.card{background:var(--card);border:1px solid var(--br);border-radius:14px;padding:12px;margin-bottom:10px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.g3{grid-template-columns:repeat(3,1fr)}
+.stat small{color:var(--mut);display:block}.stat b{font-size:19px}
+.row{display:flex;gap:8px;align-items:center}.sp{justify-content:space-between}.grow{flex:1;min-width:0}
+input,select,textarea,button{font:inherit;color:var(--tx)}
+input,select,textarea{width:100%;padding:10px;border-radius:10px;border:1px solid var(--br);background:var(--bg);margin:4px 0 8px}
+label{font-size:13px;color:var(--mut)}
+button{border:1px solid var(--br);background:var(--card);padding:10px 14px;border-radius:10px;cursor:pointer}
+button.p{background:var(--ac);border-color:var(--ac);color:#fff;font-weight:600}
+button.d{color:var(--er)}button.w{width:100%}
+.qa{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.qa button{padding:14px 4px;font-size:13px}
+.av{width:38px;height:38px;border-radius:50%;background:var(--ac);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;flex:none}
+.mut{color:var(--mut);font-size:13px}.bd{font-size:12px;padding:2px 9px;border-radius:99px;border:1px solid}
+.paid{color:var(--ok)}.part{color:var(--wr)}.pend{color:var(--er)}
+nav{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--br);display:flex;justify-content:space-around;padding:6px 4px calc(6px + env(safe-area-inset-bottom,0px));z-index:5}
+nav button{border:0;background:none;font-size:11px;color:var(--mut);padding:6px 8px}nav button.on{color:var(--ac);font-weight:700}
+#m{position:fixed;inset:0;background:#0009;z-index:9;display:none;align-items:flex-end;justify-content:center}
+#m.on{display:flex}#mb{background:var(--card);width:100%;max-width:640px;max-height:92vh;overflow:auto;border-radius:18px 18px 0 0;padding:16px}
+.chips{display:flex;gap:6px;overflow-x:auto;margin-bottom:10px}.chips button{white-space:nowrap;padding:7px 12px;border-radius:99px}.chips .on{background:var(--ac);color:#fff;border-color:var(--ac)}
+table{width:100%;border-collapse:collapse}td,th{padding:5px 2px;text-align:start;font-size:14px}
+.rtl{direction:rtl}
+@media print{body>*:not(#m){display:none!important}#m{position:static;background:none;display:block}#mb{max-height:none;overflow:visible;padding:0}.np{display:none!important}:root{--bg:#fff;--card:#fff;--tx:#000;--mut:#444;--br:#ccc}}
+</style></head><body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<main id="app"></main>
+<nav id="nav"></nav>
+<div id="m" onclick="if(event.target===this)closeM()"><div id="mb"></div></div>
+<script>
+const KEY='workshop-manager-v1';
+const T={en:{dash:'Dashboard',cust:'Customers',newr:'New Record',hist:'History',sett:'Settings',add:'Add',save:'Save',cancel:'Cancel',del:'Delete',edit:'Edit',total:'Total',paid:'Paid',bal:'Balance',search:'Search…',name:'Name',phone:'Mobile',email:'Email (optional)',reg:'Vehicle / Reg. no.',service:'Service',qty:'Qty',price:'Price',date:'Date',note:'Note',rev:'Total Revenue',pend:'Pending Payments',today:'Today',month:'This Month',year:'This Year',all:'All',recent:'Recent Records',customer:'Customer',print:'Print / PDF',share:'Share',wa:'WhatsApp',ws:'Workshop name',cur:'Currency symbol',lang:'Language',theme:'Theme',light:'Light',dark:'Dark',svc:'Services & prices',backup:'Backup',exp:'Export',imp:'Import',reset:'Reset all data',none:'Nothing here yet',addsvc:'Add service…',custom:'+ Custom item',newcust:'New Customer',editcust:'Edit Customer',sPaid:'Paid',sPart:'Partial',sPend:'Pending',fullpaid:'Mark fully paid',records:'records',custs:'Total Customers',svcs:'Total Services',inv:'Invoice',method:'Payment method',pick:'Select customer',need:'Pick a customer and add at least one service',ok:'Saved',report:'Reports',invlink:'Invite staff (share link)',disc:'Disconnect cloud',wcode:'Workshop code (acts like a password)',yname:'Your name',connect:'Connect',fbhelp:'Firebase Console → Project settings → Your apps → Web app → copy firebaseConfig. Staff need no account: send them the invite link.',months:'Monthly report',csv:'Download CSV',cloudOn:'Cloud sync on',cloudOff:'Local only',ro:'Read-only',members:'Workshop members',owner:'Owner',member:'Member',invite:'To add staff: open this page’s Share menu and invite them as Contributors. They see and edit the same data.',by:'Added by',top:'Top services'},
+ur:{dash:'ڈیش بورڈ',cust:'گاہک',newr:'نیا ریکارڈ',hist:'ہسٹری',sett:'سیٹنگز',add:'شامل کریں',save:'محفوظ کریں',cancel:'منسوخ',del:'حذف',edit:'ترمیم',total:'کل',paid:'ادا شدہ',bal:'بقایا',search:'تلاش…',name:'نام',phone:'موبائل',email:'ای میل (اختیاری)',reg:'گاڑی نمبر',service:'سروس',qty:'تعداد',price:'قیمت',date:'تاریخ',note:'نوٹ',rev:'کل آمدنی',pend:'بقایا رقم',today:'آج',month:'اس ماہ',year:'اس سال',all:'سب',recent:'حالیہ ریکارڈ',customer:'گاہک',print:'پرنٹ / پی ڈی ایف',share:'شیئر',wa:'واٹس ایپ',ws:'ورکشاپ کا نام',cur:'کرنسی کی علامت',lang:'زبان',theme:'تھیم',light:'لائٹ',dark:'ڈارک',svc:'سروسز اور قیمتیں',backup:'بیک اپ',exp:'ایکسپورٹ',imp:'امپورٹ',reset:'تمام ڈیٹا مٹائیں',none:'ابھی کچھ نہیں',addsvc:'سروس شامل کریں…',custom:'+ اپنی مرضی کی آئٹم',newcust:'نیا گاہک',editcust:'گاہک میں ترمیم',sPaid:'ادا',sPart:'جزوی',sPend:'بقایا',fullpaid:'مکمل ادا کریں',records:'ریکارڈ',custs:'کل گاہک',svcs:'کل سروسز',inv:'انوائس',method:'ادائیگی کا طریقہ',pick:'گاہک منتخب کریں',need:'گاہک چنیں اور کم از کم ایک سروس شامل کریں',ok:'محفوظ ہو گیا',report:'رپورٹس',months:'ماہانہ رپورٹ',csv:'CSV ڈاؤن لوڈ',cloudOn:'کلاؤڈ سنک آن',cloudOff:'صرف لوکل',ro:'صرف دیکھنے کی اجازت',members:'ورکشاپ ممبرز',owner:'مالک',member:'ممبر',invite:'اسٹاف شامل کرنے کے لیے اس پیج کے Share مینو سے انہیں Contributor کے طور پر بلائیں۔',by:'درج کرنے والا',top:'ٹاپ سروسز'}};
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+const today=()=>new Date().toISOString().slice(0,10);
+let S,V='dash',D=null,H={f:'all',q:''},CQ='';
+function fresh(){return{settings:{name:'My Workshop',cur:'Rs',lang:'en',theme:'dark'},services:[['Oil Change',1800],['Tyre Change',1200],['Brake Repair',2500],['Engine Repair',8000],['AC Repair',3000],['AC Gas Filling',2500],['Battery Replacement',6500],['General Maintenance',1500]].map((a,i)=>({id:'s'+i,name:a[0],price:a[1]})),customers:[],records:[]}}
+function load(){try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){}if(!S||!S.settings)S=fresh()}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}push()}
+const t=k=>(T[S.settings.lang]||T.en)[k]||T.en[k]||k;
+const money=n=>S.settings.cur+' '+(Math.round(n*100)/100).toLocaleString();
+const fd=d=>new Date(d+'T00:00').toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+const tot=r=>r.items.reduce((a,i)=>a+i.qty*i.price,0);
+const bal=r=>tot(r)-(+r.paid||0);
+const st=r=>bal(r)<=0?'paid':(+r.paid>0?'part':'pend');
+const stl=r=>({paid:t('sPaid'),part:t('sPart'),pend:t('sPend')})[st(r)];
+const cu=id=>S.customers.find(c=>c.id===id)||{name:'—',phone:'',reg:''};
+const invNo=r=>'SR-'+r.date.replace(/-/g,'')+'-'+r.id.slice(-4).toUpperCase();
+
+function render(){
+ document.documentElement.dataset.theme=S.settings.theme;
+ const rtl=S.settings.lang==='ur';document.body.classList.toggle('rtl',rtl);
+ const tabs=[['dash','🏠',t('dash')],['cust','👥',t('cust')],['new','➕',t('newr')],['hist','🕘',t('hist')],['sett','⚙️',t('sett')]];
+ $('#nav').innerHTML=tabs.map(a=>`<button class="${V===a[0]?'on':''}" onclick="go('${a[0]}')"><div style="font-size:19px">${a[1]}</div>${a[2]}</button>`).join('');
+ $('#app').innerHTML=`<div class="top"><b>🔧 ${esc(S.settings.name)}</b><div class="row"><span class="mut" style="font-size:12px">${cl()}</span><button onclick="tg('lang')">${rtl?'EN':'اردو'}</button><button onclick="tg('theme')">${S.settings.theme==='dark'?'☀️':'🌙'}</button></div></div>`+({dash,cust,new:newv,hist,sett})[V]();
+}
+function go(v){V=v;if(v==='new'&&!D)D=blank();render();scrollTo(0,0)}
+function tg(k){S.settings[k]=k==='lang'?(S.settings.lang==='ur'?'en':'ur'):(S.settings.theme==='dark'?'light':'dark');save();render()}
+  function dash(){
+ const R=S.records,m=today().slice(0,7);
+ const rev=R.reduce((a,r)=>a+tot(r),0),pen=R.reduce((a,r)=>a+Math.max(0,bal(r)),0);
+ const stat=(l,v,c)=>`<div class="card stat"><small>${l}</small><b style="color:${c||'inherit'}">${v}</b></div>`;
+ return `<div class="grid">${stat(t('custs'),S.customers.length)}${stat(t('svcs'),S.services.length)}${stat(t('today'),R.filter(r=>r.date===today()).length)}${stat(t('month'),R.filter(r=>r.date.slice(0,7)===m).length)}${stat(t('rev'),money(rev),'var(--ok)')}${stat(t('pend'),money(pen),'var(--wr)')}</div>
+ <div class="qa"><button onclick="custForm()">👤+<br>${t('newcust')}</button><button onclick="go('cust')">👥<br>${t('cust')}</button><button onclick="D=null;go('new')">📋<br>${t('newr')}</button><button onclick="go('hist')">🕘<br>${t('hist')}</button><button onclick="go('hist')">🔍<br>${t('all')}</button><button onclick="reportM()">📊<br>${t('report')}</button></div>
+ <h3>${t('recent')}</h3>${recs(R.slice().sort((a,b)=>b.date.localeCompare(a.date)||b.id.localeCompare(a.id)).slice(0,5))}`;
+}
+function recs(L){return L.length?L.map(r=>`<div class="card" onclick="showInv('${r.id}')"><div class="row sp"><b>${esc(cu(r.custId).name)}</b><span class="bd ${st(r)}">${stl(r)}</span></div><div class="mut">${esc(r.items.map(i=>i.name).join(', '))}</div><div class="row sp"><span class="mut">${fd(r.date)}</span><b>${money(tot(r))}</b></div></div>`).join(''):`<p class="mut">${t('none')}</p>`}
+
+function cust(){
+ const L=S.customers.filter(c=>(c.name+c.phone+c.reg).toLowerCase().includes(CQ.toLowerCase()));
+ return `<div class="row"><h2 class="grow">${t('cust')}</h2><button class="p" onclick="custForm()">+ ${t('add')}</button></div>
+ <input placeholder="${t('search')}" value="${esc(CQ)}" oninput="CQ=this.value;const p=this.selectionStart;render();const i=$('#app input');i.focus();i.setSelectionRange(p,p)">
+ ${L.length?L.map(c=>`<div class="card row" onclick="custForm('${c.id}')"><div class="av">${esc((c.name[0]||'?').toUpperCase())}</div><div class="grow"><b>${esc(c.name)}</b><div class="mut">${esc(c.phone)} ${c.reg?'· '+esc(c.reg):''}</div><div class="mut">${S.records.filter(r=>r.custId===c.id).length} ${t('records')}</div></div><button onclick="event.stopPropagation();D=blank();D.custId='${c.id}';go('new')">📋</button></div>`).join(''):`<p class="mut">${t('none')}</p>`}`;
+}
+function custForm(id,fromNew){
+ const c=S.customers.find(x=>x.id===id)||{name:'',phone:'',email:'',reg:''};
+ openM(`<h2>${id?t('editcust'):t('newcust')}</h2>
+ <label>${t('name')} *</label><input id="cn" value="${esc(c.name)}"><label>${t('phone')}</label><input id="cp" type="tel" value="${esc(c.phone)}"><label>${t('email')}</label><input id="ce" value="${esc(c.email)}"><label>${t('reg')}</label><input id="cr" value="${esc(c.reg)}">
+ <div class="row"><button class="p grow" onclick="saveCust('${id||''}',${!!fromNew})">${t('save')}</button><button onclick="closeM()">${t('cancel')}</button>${id?`<button class="d" onclick="delCust('${id}')">🗑</button>`:''}</div>`);
+}
+function saveCust(id,fromNew){
+ const n=$('#cn').value.trim();if(!n){$('#cn').focus();return}
+ const o={name:n,phone:$('#cp').value.trim(),email:$('#ce').value.trim(),reg:$('#cr').value.trim()};
+ if(id)Object.assign(S.customers.find(c=>c.id===id),o);else{o.id=uid();S.customers.push(o);if(fromNew&&D)D.custId=o.id}
+ save();closeM();render();
+}
+function delCust(id){if(!confirm(t('del')+'?'))return;S.customers=S.customers.filter(c=>c.id!==id);S.records=S.records.filter(r=>r.custId!==id);save();closeM();render()}
+
+function blank(){return{id:'',custId:'',date:today(),items:[],paid:0,method:'Cash',note:''}}
+function newv(){
+ return `<h2>${D.id?t('edit'):t('newr')}</h2>
+ <label>${t('customer')}</label><div class="row"><select class="grow" onchange="D.custId=this.value"><option value="">${t('pick')}</option>${S.customers.map(c=>`<option value="${c.id}" ${c.id===D.custId?'selected':''}>${esc(c.name)}${c.reg?' · '+esc(c.reg):''}</option>`).join('')}</select><button onclick="custForm('',true)">+</button></div>
+ <label>${t('date')}</label><input type="date" value="${D.date}" onchange="D.date=this.value||today()">
+ <label>${t('service')}</label>
+ ${D.items.map((i,x)=>`<div class="card"><div class="row"><input class="grow" value="${esc(i.name)}" oninput="D.items[${x}].name=this.value"><button class="d" onclick="D.items.splice(${x},1);render()">✕</button></div><div class="row"><div class="grow"><label>${t('qty')}</label><input type="number" min="1" value="${i.qty}" oninput="D.items[${x}].qty=+this.value||0;sum()"></div><div class="grow"><label>${t('price')}</label><input type="number" min="0" value="${i.price}" oninput="D.items[${x}].price=+this.value||0;sum()"></div></div></div>`).join('')}
+ <div class="row"><select class="grow" onchange="addItem(this.value)"><option value="">${t('addsvc')}</option>${S.services.map(s=>`<option value="${s.id}">${esc(s.name)} — ${money(s.price)}</option>`).join('')}</select><button onclick="addItem('')">${t('custom')}</button></div>
+ <label style="display:block;margin-top:10px">${t('paid')}</label><input type="number" min="0" value="${D.paid}" oninput="D.paid=+this.value||0;sum()">
+ <label>${t('method')}</label><select onchange="D.method=this.value">${['Cash','Bank','Easypaisa/JazzCash','Card'].map(m=>`<option ${m===D.method?'selected':''}>${m}</option>`).join('')}</select>
+ <label>${t('note')}</label><textarea rows="2" oninput="D.note=this.value">${esc(D.note)}</textarea>
+ <div class="card"><div class="row sp"><span>${t('total')}</span><b id="s1"></b></div><div class="row sp"><span>${t('bal')}</span><b id="s2"></b></div></div>
+ <div class="row"><button class="p grow" onclick="saveRec()">${t('save')}</button><button onclick="D=null;go('dash')">${t('cancel')}</button></div>${setTimeout(sum,0)&&''}`;
+}
+function sum(){const a=$('#s1');if(!a)return;a.textContent=money(tot(D));$('#s2').textContent=money(bal(D))}
+function addItem(id){const s=S.services.find(x=>x.id===id);D.items.push({name:s?s.name:'',qty:1,price:s?s.price:0});render()}
+function saveRec(){
+ D.items=D.items.filter(i=>i.name.trim());if(me&&me.id&&!D.by)D.by=me.id;
+ if(!D.custId||!D.items.length){alert(t('need'));return}
+ if(D.id)S.records[S.records.findIndex(r=>r.id===D.id)]=D;else{D.id=uid();S.records.push(D)}
+ const id=D.id;D=null;save();V='hist';render();showInv(id);
+}
+
+function hist(){
+ const m=today().slice(0,7),y=today().slice(0,4);
+ let L=S.records.filter(r=>H.f==='all'||(H.f==='today'&&r.date===today())||(H.f==='month'&&r.date.slice(0,7)===m)||(H.f==='year'&&r.date.slice(0,4)===y));
+ L=L.filter(r=>cu(r.custId).name.toLowerCase().includes(H.q.toLowerCase())).sort((a,b)=>b.date.localeCompare(a.date)||b.id.localeCompare(a.id));
+ const T1=L.reduce((a,r)=>a+tot(r),0),B=L.reduce((a,r)=>a+Math.max(0,bal(r)),0);
+ return `<h2>${t('hist')}</h2><div class="chips">${['all','today','month','year'].map(f=>`<button class="${H.f===f?'on':''}" onclick="H.f='${f}';render()">${t(f)}</button>`).join('')}</div>
+ <div class="grid g3"><div class="card stat"><small>${t('records')}</small><b>${L.length}</b></div><div class="card stat"><small>${t('total')}</small><b>${money(T1)}</b></div><div class="card stat"><small>${t('bal')}</small><b style="color:var(--wr)">${money(B)}</b></div></div>
+ <input placeholder="${t('search')}" value="${esc(H.q)}" onchange="H.q=this.value;render()">${recs(L)}`;
+}
+function showInv(id){
+ const r=S.records.find(x=>x.id===id);if(!r)return;const c=cu(r.custId);
+ openM(`<div style="text-align:center"><h2 style="margin:0">${esc(S.settings.name)}</h2><div class="mut">${t('inv')} ${invNo(r)} · ${fd(r.date)}</div><div class="mut" id="by"></div></div>
+ <div class="card" style="margin-top:12px"><b>${esc(c.name)}</b><div class="mut">${esc(c.phone)} ${c.reg?'· '+esc(c.reg):''}</div></div>
+ <table><tr class="mut"><th>${t('service')}</th><th>${t('qty')}</th><th>${t('price')}</th><th>${t('total')}</th></tr>${r.items.map(i=>`<tr><td>${esc(i.name)}</td><td>${i.qty}</td><td>${money(i.price)}</td><td>${money(i.qty*i.price)}</td></tr>`).join('')}</table>
+ <hr style="border:0;border-top:1px solid var(--br)"><div class="row sp"><b>${t('total')}</b><b>${money(tot(r))}</b></div><div class="row sp"><span>${t('paid')} (${esc(r.method)})</span><span class="paid">${money(+r.paid||0)}</span></div><div class="row sp"><span>${t('bal')}</span><b class="${bal(r)>0?'pend':'paid'}">${money(Math.max(0,bal(r)))}</b></div>
+ ${r.note?`<p class="mut">${esc(r.note)}</p>`:''}
+ <div class="np" style="margin-top:12px">${bal(r)>0?`<button class="w" style="margin-bottom:8px" onclick="fullPay('${r.id}')">✓ ${t('fullpaid')}</button>`:''}
+ <div class="grid" style="margin-bottom:8px"><button class="p" onclick="pdfInv('${r.id}')">⬇ PDF</button><button onclick="window.print()">🖨 ${t('print')}</button><button onclick="shareInv('${r.id}')">↗ ${t('share')}</button><button onclick="waInv('${r.id}')">💬 ${t('wa')}</button><button onclick="editRec('${r.id}')">✏️ ${t('edit')}</button></div>
+ <div class="row"><button class="d" onclick="delRec('${r.id}')">🗑 ${t('del')}</button><button class="grow" onclick="closeM()">✕</button></div></div>`);byFill(r);
+}
+function invText(r){const c=cu(r.custId);return `${S.settings.name}\n${t('inv')} ${invNo(r)} (${fd(r.date)})\n${c.name}${c.reg?' · '+c.reg:''}\n\n`+r.items.map(i=>`• ${i.name} ×${i.qty} = ${money(i.qty*i.price)}`).join('\n')+`\n\n${t('total')}: ${money(tot(r))}\n${t('paid')}: ${money(+r.paid||0)}\n${t('bal')}: ${money(Math.max(0,bal(r)))}`}
+function waInv(id){const r=S.records.find(x=>x.id===id),p=cu(r.custId).phone.replace(/\D/g,'');window.open('https://wa.me/'+p+'?text='+encodeURIComponent(invText(r)),'_blank')}
+function shareInv(id){const x=invText(S.records.find(r=>r.id===id));if(navigator.share)navigator.share({text:x}).catch(()=>{});else{try{navigator.clipboard.writeText(x);alert(t('ok'))}catch(e){prompt('',x)}}}
+function fullPay(id){const r=S.records.find(x=>x.id===id);r.paid=tot(r);save();showInv(id);render()}
+function editRec(id){D=JSON.parse(JSON.stringify(S.records.find(r=>r.id===id)));closeM();go('new')}
+function delRec(id){if(!confirm(t('del')+'?'))return;S.records=S.records.filter(r=>r.id!==id);save();closeM();render()}
+
+function sett(){
+ const s=S.settings;
+ return `<h2>${t('sett')}</h2><div class="card"><label>${t('ws')}</label><input value="${esc(s.name)}" onchange="S.settings.name=this.value;save();render()"><label>${t('cur')}</label><input value="${esc(s.cur)}" onchange="S.settings.cur=this.value;save();render()">
+ <label>${t('lang')}</label><div class="grid"><button class="${s.lang==='en'?'p':''}" onclick="S.settings.lang='en';save();render()">English</button><button class="${s.lang==='ur'?'p':''}" onclick="S.settings.lang='ur';save();render()">اردو</button></div>
+ <label style="display:block;margin-top:8px">${t('theme')}</label><div class="grid"><button class="${s.theme==='light'?'p':''}" onclick="S.settings.theme='light';save();render()">${t('light')}</button><button class="${s.theme==='dark'?'p':''}" onclick="S.settings.theme='dark';save();render()">${t('dark')}</button></div></div>
+ <div class="card"><b>${t('svc')}</b>${S.services.map((v,i)=>`<div class="row"><input class="grow" value="${esc(v.name)}" onchange="S.services[${i}].name=this.value;save()"><input style="width:90px" type="number" value="${v.price}" onchange="S.services[${i}].price=+this.value||0;save()"><button class="d" onclick="S.services.splice(${i},1);save();render()">🗑</button></div>`).join('')}
+ <div class="row"><input class="grow" id="ns" placeholder="${t('service')}"><input style="width:90px" id="np" type="number" placeholder="0"><button class="p" onclick="addSvc()">+</button></div></div>
+ ${cloudCard()}<div class="card"><b>${t('backup')}</b><textarea id="bk" rows="3"></textarea><div class="row"><button class="grow" onclick="$('#bk').value=JSON.stringify(S)">${t('exp')}</button><button class="grow" onclick="imp()">${t('imp')}</button></div>
+ <button class="d w" style="margin-top:8px" onclick="if(confirm(t('reset')+'?')){S=fresh();D=null;save();render()}">${t('reset')}</button></div>`;
+}
+function addSvc(){const n=$('#ns').value.trim();if(!n)return;S.services.push({id:uid(),name:n,price:+$('#np').value||0});save();render()}
+function imp(){try{const o=JSON.parse($('#bk').value);if(!o.settings||!o.records)throw 0;S=o;save();render()}catch(e){alert('Invalid backup')}}
+  let F=null,FB={db:null,user:null};const CK='wm-cloud';
+const DL={save:async({filename,data})=>{const b=data instanceof Blob?data:new Blob([data]),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=filename;document.body.appendChild(a);a.click();a.remove()}};
+const cx=async n=>n==='db'?FB.db:n==='user'?FB.user:n==='downloads'?DL:null;
+function cfgLoad(){try{return JSON.parse(localStorage.getItem(CK))}catch(e){return null}}
+async function connectFB(c){
+ try{
+  if(!window.firebase)throw new Error('Firebase SDK did not load. Check internet.');
+  if(!firebase.apps.length)firebase.initializeApp(c.cfg);
+  await firebase.auth().signInAnonymously();
+  F=firebase.firestore();
+  FB.db={collection:p=>F.collection('workshops/'+c.code+'/'+p),doc:p=>F.doc('workshops/'+c.code+'/'+p)};
+  FB.user={me:async()=>({id:c.name,name:c.name,isOwner:!!c.owner}),can:async()=>true,profiles:async ids=>Object.fromEntries([].concat(ids).map(i=>[i,{name:i}]))};
+  localStorage.setItem(CK,JSON.stringify(c));
+  await initCloud();
+  if(cloud!=='on')alert('Could not connect. Check: config, Anonymous sign-in enabled, Firestore rules published.');
+ }catch(e){alert('Cloud: '+(e.message||e))}
+}
+function doConnect(){
+ const cfg={};$('#fc').value.replace(/["']?(\w+)["']?\s*:\s*["']([^"']+)["']/g,(m,k,v)=>{cfg[k]=v});
+ const code=$('#wc').value.trim().toLowerCase().replace(/[^a-z0-9-]/g,''),name=$('#wn').value.trim()||'Owner';
+ if(!cfg.apiKey||!cfg.projectId||code.length<4){alert('Paste a valid firebaseConfig and a workshop code (4+ letters or numbers).');return}
+ connectFB({cfg,code,name,owner:true});
+}
+function invite(){
+ const c=cfgLoad(),u=location.href.split('#')[0]+'#join='+btoa(JSON.stringify({cfg:c.cfg,code:c.code}));
+ if(navigator.share)navigator.share({url:u,text:'Join '+S.settings.name}).catch(()=>{});else{try{navigator.clipboard.writeText(u);alert('Link copied')}catch(e){prompt('',u)}}
+}
+function boot(){
+ const h=location.hash.match(/join=([^&]+)/);
+ if(h){try{const j=JSON.parse(atob(h[1]));history.replaceState(null,'',location.pathname+location.search);connectFB({cfg:j.cfg,code:j.code,name:prompt('Your name?')||'Staff',owner:false});return}catch(e){}}
+ const c=cfgLoad();if(c)connectFB(c);
+}
+let db=null,last={},cloud='off',me=null,own=false,ro=false,busy=false,again=false,rq=0;
+const COLS=['customers','records','services'];
+const cl=()=>cloud==='on'?'☁️ '+t('cloudOn'):cloud==='ro'?'🔒 '+t('ro'):'📴 '+t('cloudOff');
+function cloudCard(){
+ const c=cfgLoad();
+ if(cloud==='on'&&c)return `<div class="card"><b>☁️ ${t('members')}</b><div class="row sp" style="margin-top:8px"><span>${esc(c.name)}</span><span class="bd ${own?'paid':'part'}">${own?t('owner'):t('member')}</span></div><p class="mut">${cl()} · ${esc(c.code)}</p><button class="p w" onclick="invite()">🔗 ${t('invlink')}</button><button class="d w" style="margin-top:8px" onclick="if(confirm('?')){localStorage.removeItem(CK);location.reload()}">${t('disc')}</button></div>`;
+ return `<div class="card"><b>☁️ Firebase</b><p class="mut">${t('fbhelp')}</p><label>firebaseConfig</label><textarea id="fc" rows="5" placeholder='{ apiKey: "...", authDomain: "...", projectId: "...", appId: "..." }'></textarea><label>${t('wcode')}</label><input id="wc" placeholder="ali-motors-7391"><label>${t('yname')}</label><input id="wn"><button class="p w" onclick="doConnect()">${t('connect')}</button></div>`}
+function rr(){const a=document.activeElement;if(V==='new'||$('#m').classList.contains('on')||(a&&/INPUT|TEXTAREA|SELECT/.test(a.tagName)))return;cancelAnimationFrame(rq);rq=requestAnimationFrame(render)}
+async function initCloud(){
+ try{
+  const u=await cx('user'),d=await cx('db');if(!d||!u)return;
+  db=d;me=await u.me();own=me.isOwner;ro=(await u.can('data.write'))===false;
+  for(const c of COLS){const s=await db.collection(c).get();if(c==='services'&&!S.seen&&s.size)S.services=[];s.docs.forEach(x=>{const o=x.data(),i=S[c].findIndex(y=>y.id===x.id);if(i<0)S[c].push(o);else S[c][i]=o;last[c+x.id]=JSON.stringify(o)})}
+  S.seen=1;const g=await db.doc('config/settings').get();if(g.exists){const x=g.data();S.settings.name=x.name||S.settings.name;S.settings.cur=x.cur||S.settings.cur;last.cfg=JSON.stringify({name:S.settings.name,cur:S.settings.cur})}
+  cloud=ro?'ro':'on';pull();save();render();
+ }catch(e){cloud='off'}
+}
+function pull(){
+ COLS.forEach(c=>db.collection(c).onSnapshot(s=>{
+  s.docChanges().forEach(ch=>{const id=ch.doc.id;if(ch.type==='removed'){S[c]=S[c].filter(x=>x.id!==id);delete last[c+id]}else{const x=ch.doc.data(),i=S[c].findIndex(y=>y.id===id);if(i<0)S[c].push(x);else S[c][i]=x;last[c+id]=JSON.stringify(x)}});
+  try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}rr()},()=>{}));
+ db.doc('config/settings').onSnapshot(g=>{if(g.exists){const x=g.data();S.settings.name=x.name||S.settings.name;S.settings.cur=x.cur||S.settings.cur;last.cfg=JSON.stringify({name:S.settings.name,cur:S.settings.cur});rr()}},()=>{});
+}
+async function push(){
+ if(!db||ro)return;if(busy){again=true;return}busy=true;
+ try{
+  for(const c of COLS){const ids=new Set();
+   for(const x of S[c]){ids.add(x.id);const j=JSON.stringify(x);if(last[c+x.id]!==j){await db.collection(c).doc(x.id).set(x);last[c+x.id]=j}}
+   for(const k of Object.keys(last))if(k.startsWith(c)&&!ids.has(k.slice(c.length))){await db.collection(c).doc(k.slice(c.length)).delete();delete last[k]}}
+  const cj=JSON.stringify({name:S.settings.name,cur:S.settings.cur});if(last.cfg!==cj){await db.doc('config/settings').set(JSON.parse(cj));last.cfg=cj}
+  cloud='on';
+ }catch(e){cloud=e&&e.code==='not_granted'?'ro':'off';if(cloud==='ro')ro=true}
+ busy=false;if(again){again=false;push()}
+}
+async function byFill(r){if(!r.by)return;try{const u=await cx('user'),p=await u.profiles([r.by]),n=p[r.by]&&p[r.by].name;if(n&&$('#by'))$('#by').textContent=t('by')+': '+n}catch(e){}}
+async function pdfInv(id){
+ const r=S.records.find(x=>x.id===id),c=cu(r.custId),dl=await cx('downloads');
+ if(!window.jspdf||!dl){window.print();return}
+ const p=new window.jspdf.jsPDF();p.setFontSize(18);p.text(S.settings.name,105,20,{align:'center'});p.setFontSize(10);p.text('Invoice '+invNo(r)+'  |  '+r.date,105,27,{align:'center'});
+ p.setFontSize(12);p.text(c.name+(c.reg?'  |  '+c.reg:'')+(c.phone?'  |  '+c.phone:''),15,40);
+ let y=52;p.setFont(undefined,'bold');p.text('Service',15,y);p.text('Qty',120,y);p.text('Price',145,y);p.text('Total',180,y);p.setFont(undefined,'normal');
+ r.items.forEach(i=>{y+=8;p.text(String(i.name),15,y);p.text(String(i.qty),120,y);p.text(String(i.price),145,y);p.text(String(i.qty*i.price),180,y)});
+ y+=14;p.text('Total: '+money(tot(r)),15,y);p.text('Paid: '+money(+r.paid||0),15,y+8);p.text('Balance: '+money(Math.max(0,bal(r))),15,y+16);
+ try{await dl.save({filename:invNo(r)+'.pdf',data:p.output('arraybuffer')})}catch(e){}
+}
+function reportM(){
+ const M={},sv={};S.records.forEach(r=>{const k=r.date.slice(0,7);M[k]=M[k]||{n:0,t:0,p:0};M[k].n++;M[k].t+=tot(r);M[k].p+=+r.paid||0;r.items.forEach(i=>sv[i.name]=(sv[i.name]||0)+i.qty*i.price)});
+ const top=Object.entries(sv).sort((a,b)=>b[1]-a[1]).slice(0,5);
+ openM(`<h2>📊 ${t('months')}</h2><table><tr class="mut"><th>${t('month')}</th><th>#</th><th>${t('total')}</th><th>${t('bal')}</th></tr>${Object.keys(M).sort().reverse().slice(0,12).map(k=>`<tr><td>${k}</td><td>${M[k].n}</td><td>${money(M[k].t)}</td><td>${money(M[k].t-M[k].p)}</td></tr>`).join('')||`<tr><td>${t('none')}</td></tr>`}</table><h3>${t('top')}</h3>${top.map(a=>`<div class="row sp"><span>${esc(a[0])}</span><b>${money(a[1])}</b></div>`).join('')}<div class="row" style="margin-top:12px"><button class="p grow" onclick="csv()">⬇ ${t('csv')}</button><button onclick="closeM()">✕</button></div>`);
+}
+async function csv(){
+ const q=s=>'"'+String(s).replace(/"/g,'""')+'"';
+ const rows=[['Invoice','Date','Customer','Phone','Vehicle','Services','Total','Paid','Balance']].concat(S.records.map(r=>{const c=cu(r.custId);return[invNo(r),r.date,c.name,c.phone,c.reg,r.items.map(i=>i.name+' x'+i.qty).join('; '),tot(r),+r.paid||0,bal(r)]}));
+ const dl=await cx('downloads');if(dl)try{await dl.save({filename:'records.csv',data:'\ufeff'+rows.map(r=>r.map(q).join(',')).join('\n')})}catch(e){}
+}
+function openM(h){$('#mb').innerHTML=h;$('#m').classList.add('on')}
+function closeM(){$('#m').classList.remove('on')}
+load();render();boot();
+</script></body></html>
