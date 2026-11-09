@@ -126,7 +126,3 @@ async function push(){
  busy=false;if(again){again=false;push()}
 }
 render();
-load();render();
-</script>
-<script src="invoice.js"></script>
-<script>boot();</script></body></html>
