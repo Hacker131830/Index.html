@@ -2,10 +2,7 @@
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="theme-color" content="#0b1220">
-<title>Workshop Manager</title> <link rel="manifest" href="manifest.json">
-<link rel="icon" href="icon-192.png">
-<link rel="apple-touch-icon" href="icon-192.png">
-<script>if('serviceWorker'in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js'))</script>
+<title>Workshop Manager</title>
 <style>
 :root{--bg:#f3f5fa;--card:#fff;--tx:#0f172a;--mut:#64748b;--br:#e2e8f0;--ac:#3b82f6;--ok:#16a34a;--wr:#d97706;--er:#dc2626;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0b1220;--card:#131c2e;--tx:#e6ebf5;--mut:#8b97ad;--br:#24314a;--ac:#4c8dff;--ok:#34d399;--wr:#fbbf24;--er:#f87171}}
@@ -39,9 +36,9 @@ table{width:100%;border-collapse:collapse}td,th{padding:5px 2px;text-align:start
 @media print{body>*:not(#m){display:none!important}#m{position:static;background:none;display:block}#mb{max-height:none;overflow:visible;padding:0}.np{display:none!important}:root{--bg:#fff;--card:#fff;--tx:#000;--mut:#444;--br:#ccc}}
 </style></head><body>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <main id="app"></main>
 <nav id="nav"></nav>
 <div id="m" onclick="if(event.target===this)closeM()"><div id="mb"></div></div>
@@ -76,7 +73,7 @@ function render(){
 }
 function go(v){V=v;if(v==='new'&&!D)D=blank();render();scrollTo(0,0)}
 function tg(k){S.settings[k]=k==='lang'?(S.settings.lang==='ur'?'en':'ur'):(S.settings.theme==='dark'?'light':'dark');save();render()}
-  function dash(){
+ function dash(){
  const R=S.records,m=today().slice(0,7);
  const rev=R.reduce((a,r)=>a+tot(r),0),pen=R.reduce((a,r)=>a+Math.max(0,bal(r)),0);
  const stat=(l,v,c)=>`<div class="card stat"><small>${l}</small><b style="color:${c||'inherit'}">${v}</b></div>`;
@@ -152,4 +149,110 @@ function showInv(id){
 function invText(r){const c=cu(r.custId);return `${S.settings.name}\n${t('inv')} ${invNo(r)} (${fd(r.date)})\n${c.name}${c.reg?' · '+c.reg:''}\n\n`+r.items.map(i=>`• ${i.name} ×${i.qty} = ${money(i.qty*i.price)}`).join('\n')+`\n\n${t('total')}: ${money(tot(r))}\n${t('paid')}: ${money(+r.paid||0)}\n${t('bal')}: ${money(Math.max(0,bal(r)))}`}
 function waInv(id){const r=S.records.find(x=>x.id===id),p=cu(r.custId).phone.replace(/\D/g,'');window.open('https://wa.me/'+p+'?text='+encodeURIComponent(invText(r)),'_blank')}
 function shareInv(id){const x=invText(S.records.find(r=>r.id===id));if(navigator.share)navigator.share({text:x}).catch(()=>{});else{try{navigator.clipboard.writeText(x);alert(t('ok'))}catch(e){prompt('',x)}}}
-function fullPay(id){const r=S.records.find(
+function fullPay(id){const r=S.records.find(x=>x.id===id);r.paid=tot(r);save();showInv(id);render()}
+function editRec(id){D=JSON.parse(JSON.stringify(S.records.find(r=>r.id===id)));closeM();go('new')}
+function delRec(id){if(!confirm(t('del')+'?'))return;S.records=S.records.filter(r=>r.id!==id);save();closeM();render()}
+
+function sett(){
+ const s=S.settings;
+ return `<h2>${t('sett')}</h2><div class="card"><label>${t('ws')}</label><input value="${esc(s.name)}" onchange="S.settings.name=this.value;save();render()"><label>${t('cur')}</label><input value="${esc(s.cur)}" onchange="S.settings.cur=this.value;save();render()">
+ <label>${t('lang')}</label><div class="grid"><button class="${s.lang==='en'?'p':''}" onclick="S.settings.lang='en';save();render()">English</button><button class="${s.lang==='ur'?'p':''}" onclick="S.settings.lang='ur';save();render()">اردو</button></div>
+ <label style="display:block;margin-top:8px">${t('theme')}</label><div class="grid"><button class="${s.theme==='light'?'p':''}" onclick="S.settings.theme='light';save();render()">${t('light')}</button><button class="${s.theme==='dark'?'p':''}" onclick="S.settings.theme='dark';save();render()">${t('dark')}</button></div></div>
+ <div class="card"><b>${t('svc')}</b>${S.services.map((v,i)=>`<div class="row"><input class="grow" value="${esc(v.name)}" onchange="S.services[${i}].name=this.value;save()"><input style="width:90px" type="number" value="${v.price}" onchange="S.services[${i}].price=+this.value||0;save()"><button class="d" onclick="S.services.splice(${i},1);save();render()">🗑</button></div>`).join('')}
+ <div class="row"><input class="grow" id="ns" placeholder="${t('service')}"><input style="width:90px" id="np" type="number" placeholder="0"><button class="p" onclick="addSvc()">+</button></div></div>
+ ${cloudCard()}<div class="card"><b>${t('backup')}</b><textarea id="bk" rows="3"></textarea><div class="row"><button class="grow" onclick="$('#bk').value=JSON.stringify(S)">${t('exp')}</button><button class="grow" onclick="imp()">${t('imp')}</button></div>
+ <button class="d w" style="margin-top:8px" onclick="if(confirm(t('reset')+'?')){S=fresh();D=null;save();render()}">${t('reset')}</button></div>`;
+}
+function addSvc(){const n=$('#ns').value.trim();if(!n)return;S.services.push({id:uid(),name:n,price:+$('#np').value||0});save();render()}
+function imp(){try{const o=JSON.parse($('#bk').value);if(!o.settings||!o.records)throw 0;S=o;save();render()}catch(e){alert('Invalid backup')}}
+ let F=null,FB={db:null,user:null};const CK='wm-cloud';
+const DL={save:async({filename,data})=>{const b=data instanceof Blob?data:new Blob([data]),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=filename;document.body.appendChild(a);a.click();a.remove()}};
+const cx=async n=>n==='db'?FB.db:n==='user'?FB.user:n==='downloads'?DL:null;
+function cfgLoad(){try{return JSON.parse(localStorage.getItem(CK))}catch(e){return null}}
+async function connectFB(c){
+ try{
+  if(!window.firebase)throw new Error('Firebase SDK did not load. Check internet.');
+  if(!firebase.apps.length)firebase.initializeApp(c.cfg);
+  await firebase.auth().signInAnonymously();
+  F=firebase.firestore();
+  FB.db={collection:p=>F.collection('workshops/'+c.code+'/'+p),doc:p=>F.doc('workshops/'+c.code+'/'+p)};
+  FB.user={me:async()=>({id:c.name,name:c.name,isOwner:!!c.owner}),can:async()=>true,profiles:async ids=>Object.fromEntries([].concat(ids).map(i=>[i,{name:i}]))};
+  localStorage.setItem(CK,JSON.stringify(c));
+  await initCloud();
+  if(cloud!=='on')alert('Could not connect. Check: config, Anonymous sign-in enabled, Firestore rules published.');
+ }catch(e){alert('Cloud: '+(e.message||e))}
+}
+function doConnect(){
+ const cfg={};$('#fc').value.replace(/["']?(\w+)["']?\s*:\s*["']([^"']+)["']/g,(m,k,v)=>{cfg[k]=v});
+ const code=$('#wc').value.trim().toLowerCase().replace(/[^a-z0-9-]/g,''),name=$('#wn').value.trim()||'Owner';
+ if(!cfg.apiKey||!cfg.projectId||code.length<4){alert('Paste a valid firebaseConfig and a workshop code (4+ letters or numbers).');return}
+ connectFB({cfg,code,name,owner:true});
+}
+function invite(){
+ const c=cfgLoad(),u=location.href.split('#')[0]+'#join='+btoa(JSON.stringify({cfg:c.cfg,code:c.code}));
+ if(navigator.share)navigator.share({url:u,text:'Join '+S.settings.name}).catch(()=>{});else{try{navigator.clipboard.writeText(u);alert('Link copied')}catch(e){prompt('',u)}}
+}
+function boot(){
+ const h=location.hash.match(/join=([^&]+)/);
+ if(h){try{const j=JSON.parse(atob(h[1]));history.replaceState(null,'',location.pathname+location.search);connectFB({cfg:j.cfg,code:j.code,name:prompt('Your name?')||'Staff',owner:false});return}catch(e){}}
+ const c=cfgLoad();if(c)connectFB(c);
+}
+let db=null,last={},cloud='off',me=null,own=false,ro=false,busy=false,again=false,rq=0;
+const COLS=['customers','records','services'];
+const cl=()=>cloud==='on'?'☁️ '+t('cloudOn'):cloud==='ro'?'🔒 '+t('ro'):'📴 '+t('cloudOff');
+function cloudCard(){
+ const c=cfgLoad();
+ if(cloud==='on'&&c)return `<div class="card"><b>☁️ ${t('members')}</b><div class="row sp" style="margin-top:8px"><span>${esc(c.name)}</span><span class="bd ${own?'paid':'part'}">${own?t('owner'):t('member')}</span></div><p class="mut">${cl()} · ${esc(c.code)}</p><button class="p w" onclick="invite()">🔗 ${t('invlink')}</button><button class="d w" style="margin-top:8px" onclick="if(confirm('?')){localStorage.removeItem(CK);location.reload()}">${t('disc')}</button></div>`;
+ return `<div class="card"><b>☁️ Firebase</b><p class="mut">${t('fbhelp')}</p><label>firebaseConfig</label><textarea id="fc" rows="5" placeholder='{ apiKey: "...", authDomain: "...", projectId: "...", appId: "..." }'></textarea><label>${t('wcode')}</label><input id="wc" placeholder="ali-motors-7391"><label>${t('yname')}</label><input id="wn"><button class="p w" onclick="doConnect()">${t('connect')}</button></div>`}
+function rr(){const a=document.activeElement;if(V==='new'||$('#m').classList.contains('on')||(a&&/INPUT|TEXTAREA|SELECT/.test(a.tagName)))return;cancelAnimationFrame(rq);rq=requestAnimationFrame(render)}
+async function initCloud(){
+ try{
+  const u=await cx('user'),d=await cx('db');if(!d||!u)return;
+  db=d;me=await u.me();own=me.isOwner;ro=(await u.can('data.write'))===false;
+  for(const c of COLS){const s=await db.collection(c).get();if(c==='services'&&!S.seen&&s.size)S.services=[];s.docs.forEach(x=>{const o=x.data(),i=S[c].findIndex(y=>y.id===x.id);if(i<0)S[c].push(o);else S[c][i]=o;last[c+x.id]=JSON.stringify(o)})}
+  S.seen=1;const g=await db.doc('config/settings').get();if(g.exists){const x=g.data();S.settings.name=x.name||S.settings.name;S.settings.cur=x.cur||S.settings.cur;last.cfg=JSON.stringify({name:S.settings.name,cur:S.settings.cur})}
+  cloud=ro?'ro':'on';pull();save();render();
+ }catch(e){cloud='off'}
+}
+function pull(){
+ COLS.forEach(c=>db.collection(c).onSnapshot(s=>{
+  s.docChanges().forEach(ch=>{const id=ch.doc.id;if(ch.type==='removed'){S[c]=S[c].filter(x=>x.id!==id);delete last[c+id]}else{const x=ch.doc.data(),i=S[c].findIndex(y=>y.id===id);if(i<0)S[c].push(x);else S[c][i]=x;last[c+id]=JSON.stringify(x)}});
+  try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}rr()},()=>{}));
+ db.doc('config/settings').onSnapshot(g=>{if(g.exists){const x=g.data();S.settings.name=x.name||S.settings.name;S.settings.cur=x.cur||S.settings.cur;last.cfg=JSON.stringify({name:S.settings.name,cur:S.settings.cur});rr()}},()=>{});
+}
+async function push(){
+ if(!db||ro)return;if(busy){again=true;return}busy=true;
+ try{
+  for(const c of COLS){const ids=new Set();
+   for(const x of S[c]){ids.add(x.id);const j=JSON.stringify(x);if(last[c+x.id]!==j){await db.collection(c).doc(x.id).set(x);last[c+x.id]=j}}
+   for(const k of Object.keys(last))if(k.startsWith(c)&&!ids.has(k.slice(c.length))){await db.collection(c).doc(k.slice(c.length)).delete();delete last[k]}}
+  const cj=JSON.stringify({name:S.settings.name,cur:S.settings.cur});if(last.cfg!==cj){await db.doc('config/settings').set(JSON.parse(cj));last.cfg=cj}
+  cloud='on';
+ }catch(e){cloud=e&&e.code==='not_granted'?'ro':'off';if(cloud==='ro')ro=true}
+ busy=false;if(again){again=false;push()}
+}
+async function byFill(r){if(!r.by)return;try{const u=await cx('user'),p=await u.profiles([r.by]),n=p[r.by]&&p[r.by].name;if(n&&$('#by'))$('#by').textContent=t('by')+': '+n}catch(e){}}
+async function pdfInv(id){
+ const r=S.records.find(x=>x.id===id),c=cu(r.custId),dl=await cx('downloads');
+ if(!window.jspdf||!dl){window.print();return}
+ const p=new window.jspdf.jsPDF();p.setFontSize(18);p.text(S.settings.name,105,20,{align:'center'});p.setFontSize(10);p.text('Invoice '+invNo(r)+'  |  '+r.date,105,27,{align:'center'});
+ p.setFontSize(12);p.text(c.name+(c.reg?'  |  '+c.reg:'')+(c.phone?'  |  '+c.phone:''),15,40);
+ let y=52;p.setFont(undefined,'bold');p.text('Service',15,y);p.text('Qty',120,y);p.text('Price',145,y);p.text('Total',180,y);p.setFont(undefined,'normal');
+ r.items.forEach(i=>{y+=8;p.text(String(i.name),15,y);p.text(String(i.qty),120,y);p.text(String(i.price),145,y);p.text(String(i.qty*i.price),180,y)});
+ y+=14;p.text('Total: '+money(tot(r)),15,y);p.text('Paid: '+money(+r.paid||0),15,y+8);p.text('Balance: '+money(Math.max(0,bal(r))),15,y+16);
+ try{await dl.save({filename:invNo(r)+'.pdf',data:p.output('arraybuffer')})}catch(e){}
+}
+function reportM(){
+ const M={},sv={};S.records.forEach(r=>{const k=r.date.slice(0,7);M[k]=M[k]||{n:0,t:0,p:0};M[k].n++;M[k].t+=tot(r);M[k].p+=+r.paid||0;r.items.forEach(i=>sv[i.name]=(sv[i.name]||0)+i.qty*i.price)});
+ const top=Object.entries(sv).sort((a,b)=>b[1]-a[1]).slice(0,5);
+ openM(`<h2>📊 ${t('months')}</h2><table><tr class="mut"><th>${t('month')}</th><th>#</th><th>${t('total')}</th><th>${t('bal')}</th></tr>${Object.keys(M).sort().reverse().slice(0,12).map(k=>`<tr><td>${k}</td><td>${M[k].n}</td><td>${money(M[k].t)}</td><td>${money(M[k].t-M[k].p)}</td></tr>`).join('')||`<tr><td>${t('none')}</td></tr>`}</table><h3>${t('top')}</h3>${top.map(a=>`<div class="row sp"><span>${esc(a[0])}</span><b>${money(a[1])}</b></div>`).join('')}<div class="row" style="margin-top:12px"><button class="p grow" onclick="csv()">⬇ ${t('csv')}</button><button onclick="closeM()">✕</button></div>`);
+}
+async function csv(){
+ const q=s=>'"'+String(s).replace(/"/g,'""')+'"';
+ const rows=[['Invoice','Date','Customer','Phone','Vehicle','Services','Total','Paid','Balance']].concat(S.records.map(r=>{const c=cu(r.custId);return[invNo(r),r.date,c.name,c.phone,c.reg,r.items.map(i=>i.name+' x'+i.qty).join('; '),tot(r),+r.paid||0,bal(r)]}));
+ const dl=await cx('downloads');if(dl)try{await dl.save({filename:'records.csv',data:'\ufeff'+rows.map(r=>r.map(q).join(',')).join('\n')})}catch(e){}
+}
+function openM(h){$('#mb').innerHTML=h;$('#m').classList.add('on')}
+function closeM(){$('#m').classList.remove('on')}
+load();render();boot();
+</script></body></html>
