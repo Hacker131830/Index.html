@@ -172,19 +172,61 @@ function imp(){try{const o=JSON.parse($('#bk').value);if(!o.settings||!o.records
 const DL={save:async({filename,data})=>{const b=data instanceof Blob?data:new Blob([data]),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=filename;document.body.appendChild(a);a.click();a.remove()}};
 const cx=async n=>n==='db'?FB.db:n==='user'?FB.user:n==='downloads'?DL:null;
 function cfgLoad(){try{return JSON.parse(localStorage.getItem(CK))}catch(e){return null}}
-async function connectFB(c){
- try{
-  if(!window.firebase)throw new Error('Firebase SDK did not load. Check internet.');
-  if(!firebase.apps.length)firebase.initializeApp(c.cfg);
-  await firebase.auth().signInAnonymously();
-  F=firebase.firestore();
-  FB.db={collection:p=>F.collection('workshops/'+c.code+'/'+p),doc:p=>F.doc('workshops/'+c.code+'/'+p)};
-  FB.user={me:async()=>({id:c.name,name:c.name,isOwner:!!c.owner}),can:async()=>true,profiles:async ids=>Object.fromEntries([].concat(ids).map(i=>[i,{name:i}]))};
-  localStorage.setItem(CK,JSON.stringify(c));
-  await initCloud();
-  if(cloud!=='on')alert('Could not connect. Check: config, Anonymous sign-in enabled, Firestore rules published.');
- }catch(e){alert('Cloud: '+(e.message||e))}
+// Auth State check karein
+firebase.auth().onAuthStateChanged((user) => {
+  const scr = document.getElementById('authScreen');
+  if (user) {
+    if (scr) scr.style.display = 'none';
+  } else {
+    if (scr) scr.style.display = 'flex';
+  }
+});
+
+// Login button dabane par
+async function doLogin() {
+  const em = document.getElementById('authEmail').value.trim();
+  const pw = document.getElementById('authPass').value;
+  const err = document.getElementById('authErr');
+  const btn = document.getElementById('loginBtn');
+  
+  if (!em || !pw) {
+    err.innerText = "Email aur password daalein!";
+    err.style.display = "block";
+    return;
+  }
+  
+  btn.innerText = "Checking...";
+  btn.disabled = true;
+  err.style.display = "none";
+  
+  try {
+    await firebase.auth().signInWithEmailAndPassword(em, pw);
+    btn.innerText = "Login";
+    btn.disabled = false;
+    document.getElementById('authScreen').style.display = 'none';
+  } catch (e) {
+    btn.innerText = "Login";
+    btn.disabled = false;
+    err.innerText = e.message;
+    err.style.display = "block";
+  }
 }
+
+// connectFB function (Anonymous hata kar Firestore direct connect karein)
+async function connectFB(c) {
+  try {
+    if (!window.firebase) throw new Error('Firebase missing');
+    if (!firebase.apps.length) firebase.initializeApp(c);
+    F = firebase.firestore();
+    FB.db = { collection: p => F.collection(p) };
+    FB.user = { me: async () => ({ id: c.name || 'user' }) };
+    localStorage.setItem(CK, JSON.stringify(c));
+    await initCloud();
+  } catch(e) {
+    alert('Cloud: ' + (e.message || e));
+  }
+}
+
 function doConnect(){
  const cfg={};$('#fc').value.replace(/["']?(\w+)["']?\s*:\s*["']([^"']+)["']/g,(m,k,v)=>{cfg[k]=v});
  const code=$('#wc').value.trim().toLowerCase().replace(/[^a-z0-9-]/g,''),name=$('#wn').value.trim()||'Owner';
