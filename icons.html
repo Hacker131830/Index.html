@@ -1,0 +1,17 @@
+<!DOCTYPE html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Icon maker</title>
+<body style="font-family:sans-serif;text-align:center;background:#111;color:#fff"><h3>Icon maker</h3>
+<canvas id="v" width="256" height="256" style="border-radius:28px"></canvas>
+<p><button onclick="dl(512)" style="padding:14px;font-size:18px">Download icon-512.png</button></p>
+<p><button onclick="dl(192)" style="padding:14px;font-size:18px">Download icon-192.png</button></p>
+<script>
+function draw(S){const c=document.createElement('canvas');c.width=c.height=S;const d=c.getContext('2d');d.scale(S/1024,S/1024);
+const cx=512,cy=512,rr=(x,y,w,h,r,f)=>{d.fillStyle=f;d.beginPath();d.moveTo(x+r,y);d.arcTo(x+w,y,x+w,y+h,r);d.arcTo(x+w,y+h,x,y+h,r);d.arcTo(x,y+h,x,y,r);d.arcTo(x,y,x+w,y,r);d.closePath();d.fill()},el=(x,y,w,h,f)=>{d.fillStyle=f;d.beginPath();d.ellipse(x+w/2,y+h/2,w/2,h/2,0,0,7);d.fill()};
+d.fillStyle='#0b1220';d.fillRect(0,0,1024,1024);
+el(152,152,720,720,'#131c2e');d.strokeStyle='#24314a';d.lineWidth=10;d.beginPath();d.arc(cx,cy,355,0,7);d.stroke();
+d.fillStyle='#4c8dff';d.beginPath();for(let i=0;i<40;i++){const a=Math.PI*2*i/40,k=i%4,r=(k==1||k==2)?270:215;d.lineTo(cx+r*Math.cos(a),cy+r*Math.sin(a))}d.closePath();d.fill();
+el(cx-150,cy-150,300,300,'#131c2e');
+rr(cx-28,cy-120,56,240,28,'#fff');rr(cx-85,cy-135,170,65,30,'#fff');d.fillStyle='#131c2e';d.fillRect(cx-28,cy-135,56,75);
+el(cx-55,cy+80,110,110,'#fff');el(cx-22,cy+113,44,44,'#131c2e');return c}
+function dl(S){draw(S).toBlob(b=>{const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='icon-'+S+'.png';document.body.appendChild(a);a.click();a.remove()},'image/png')}
+const v=document.getElementById('v').getContext('2d');v.drawImage(draw(256),0,0);
+</script></body>
