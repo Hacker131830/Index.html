@@ -173,6 +173,7 @@ const DL={save:async({filename,data})=>{const b=data instanceof Blob?data:new Bl
 const cx=async n=>n==='db'?FB.db:n==='user'?FB.user:n==='downloads'?DL:null;
 function cfgLoad(){try{return JSON.parse(localStorage.getItem(CK))}catch(e){return null}}
 // Auth State check karein
+f// Auth State check karein
 firebase.auth().onAuthStateChanged((user) => {
   const scr = document.getElementById('authScreen');
   if (user) {
@@ -181,6 +182,7 @@ firebase.auth().onAuthStateChanged((user) => {
     if (scr) scr.style.display = 'flex';
   }
 });
+
 
 // Login button dabane par
 async function doLogin() {
