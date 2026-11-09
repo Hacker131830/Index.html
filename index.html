@@ -2,7 +2,10 @@
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="theme-color" content="#0b1220">
-<title>Workshop Manager</title>
+<title>Workshop Manager</title> <link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<script>if('serviceWorker'in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js'))</script>
 <style>
 :root{--bg:#f3f5fa;--card:#fff;--tx:#0f172a;--mut:#64748b;--br:#e2e8f0;--ac:#3b82f6;--ok:#16a34a;--wr:#d97706;--er:#dc2626;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0b1220;--card:#131c2e;--tx:#e6ebf5;--mut:#8b97ad;--br:#24314a;--ac:#4c8dff;--ok:#34d399;--wr:#fbbf24;--er:#f87171}}
